@@ -33,9 +33,9 @@ jobs:
     timeout-minutes: 180
     defaults:
       run:
-        # Windows PowerShell 5.1 ships with every Windows install. (A bare `bash` can resolve to the WSL
-        # launcher in System32 instead of Git Bash, so the steps avoid bash entirely.)
-        shell: powershell
+        # Plain cmd: PowerShell script files can be blocked by the PC's execution policy, and a bare `bash`
+        # can resolve to the WSL launcher. The real work is in scripts/runner_step.py.
+        shell: cmd
     env:
       PYTHONUTF8: "1"
     steps:
@@ -43,19 +43,11 @@ jobs:
         with:
           ref: main
 
-      # Python 3.12 is installed for all users on the PC. The `py` launcher finds it regardless of PATH order;
-      # a fresh venv keeps the job isolated.
+      # Python 3.12 is installed for all users on the PC; the `py` launcher finds it regardless of PATH order.
       - name: Python environment
         run: |
-          if (Get-Command py -ErrorAction SilentlyContinue) { py -3.12 -m venv .venv } else { python -m venv .venv }
-          if ($LASTEXITCODE) { exit 1 }
-          $py = Join-Path $PWD ".venv\Scripts\python.exe"
-          & $py -m pip install -q --upgrade pip
-          if ($LASTEXITCODE) { exit 1 }
-          & $py -m pip install -q -r requirements.txt
-          if ($LASTEXITCODE) { exit 1 }
-          & $py --version
-          [IO.File]::AppendAllText($env:GITHUB_ENV, "PY=$py`n")
+          where py >nul 2>nul
+          if %ERRORLEVEL%==0 (py -3.12 scripts\runner_step.py setup) else (python scripts\runner_step.py setup)
 
       # Transcripts live only in this cache (never committed or published).
       - uses: actions/cache@v4
@@ -71,25 +63,10 @@ jobs:
           TRANSCRIPT_PROXY_URL: ${{ secrets.TRANSCRIPT_PROXY_URL }}
           BACKFILL_DAYS: ${{ inputs.backfill_days }}
           MAX_VIDEOS: ${{ inputs.max_videos }}
-        run: |
-          $a = @()
-          if ($env:BACKFILL_DAYS) { $a += @("--backfill-days", $env:BACKFILL_DAYS) }
-          if ($env:MAX_VIDEOS) { $a += @("--max-videos", $env:MAX_VIDEOS) }
-          & $env:PY -m hub run --summary-out "$env:RUNNER_TEMP\summary.json" @a
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+        run: .venv\Scripts\python.exe scripts\runner_step.py run
 
       - name: Commit results
-        run: |
-          git config user.name "knowledge-hub-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A data knowledge digests config/topics.yaml
-          git diff --cached --quiet
-          if ($LASTEXITCODE -eq 0) { Write-Output "No changes to commit"; exit 0 }
-          $msg = & $env:PY -c "import json,sys; print(json.load(open(sys.argv[1], encoding='utf-8'))['commit_message'])" "$env:RUNNER_TEMP\summary.json"
-          git commit -m "$msg"
-          if ($LASTEXITCODE) { exit 1 }
-          git push origin HEAD:main
-          if ($LASTEXITCODE) { exit 1 }
+        run: .venv\Scripts\python.exe scripts\runner_step.py commit
 
       - name: Open or update the digest issue
         uses: actions/github-script@v7
