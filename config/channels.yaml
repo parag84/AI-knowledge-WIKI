@@ -6,7 +6,7 @@ channels:
   - name: AI Engineer
     handle: "@aiDotEngineer"
   - name: Agentic AI Foundation
-    handle: "@AgenticAIFoundation"
+    handle: "@AgenticAI-Foundation"
   - name: Claude
     handle: "@claude"
   - name: Anthropic
