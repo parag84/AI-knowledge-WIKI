@@ -6,6 +6,17 @@ name: Weekly knowledge update
 on:
   schedule:
     - cron: "0 19 * * 0" # Sundays 19:00 UTC (19:00 Irish winter time, 20:00 Irish summer time)
+  # Also run when code or config changes land on main (e.g. a merged PR), so an update can start without
+  # clicking "Run workflow". The bot's own result commits use GITHUB_TOKEN, which never triggers workflows.
+  push:
+    branches: [main]
+    paths:
+      - "config/**"
+      - "hub/**"
+      - "prompts/**"
+      - "scripts/**"
+      - "requirements.txt"
+      - ".github/workflows/weekly.yml"
   workflow_dispatch:
     inputs:
       backfill_days:
