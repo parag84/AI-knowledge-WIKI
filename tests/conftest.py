@@ -20,6 +20,9 @@ def repo(tmp_path, monkeypatch):
     # Keep tests offline: no thumbnail downloads.
     from hub import visuals
     monkeypatch.setattr(visuals, "download_thumbnail", lambda *a, **k: False)
+    # No real pauses between transcript downloads in tests.
+    from hub import pipeline
+    monkeypatch.setattr(pipeline.time, "sleep", lambda s: None)
     # Only one channel in tests.
     (tmp_path / "config" / "channels.yaml").write_text(
         "channels:\n  - name: AI Engineer\n    handle: \"@aiDotEngineer\"\n")
