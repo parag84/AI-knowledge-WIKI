@@ -1,0 +1,90 @@
+name: Weekly knowledge update
+
+on:
+  schedule:
+    - cron: "0 6 * * 0" # Sundays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      backfill_days:
+        description: "Look back N days instead of since the last run (e.g. 30 for the first backfill)"
+        required: false
+        default: ""
+      max_videos:
+        description: "Cap on videos analysed this run (default from config/settings.yaml)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+  issues: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: weekly-update
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      # Transcripts live only in this cache (never committed or published).
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: transcripts-${{ github.run_id }}
+          restore-keys: transcripts-
+
+      - name: Run pipeline
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TRANSCRIPT_PROXY_URL: ${{ secrets.TRANSCRIPT_PROXY_URL }}
+          BACKFILL_DAYS: ${{ inputs.backfill_days }}
+          MAX_VIDEOS: ${{ inputs.max_videos }}
+        run: |
+          args=()
+          [ -n "$BACKFILL_DAYS" ] && args+=(--backfill-days "$BACKFILL_DAYS")
+          [ -n "$MAX_VIDEOS" ] && args+=(--max-videos "$MAX_VIDEOS")
+          python -m hub run --summary-out "$RUNNER_TEMP/summary.json" "${args[@]}"
+
+      - name: Commit results
+        run: |
+          git config user.name "knowledge-hub-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data knowledge digests config/topics.yaml
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            msg=$(python -c "import json,sys; print(json.load(open(sys.argv[1]))['commit_message'])" "$RUNNER_TEMP/summary.json")
+            git commit -m "$msg"
+            git push
+          fi
+
+      - name: Open or update the digest issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          read -r path title < <(python -c "import json,sys; s=json.load(open(sys.argv[1])); print(s['digest'], s['digest_title'])" "$RUNNER_TEMP/summary.json")
+          gh label create digest --color 3B4CCA --description "Weekly knowledge digest" --force >/dev/null
+          existing=$(gh issue list --label digest --state all --search "\"$title\" in:title" --json number,title \
+            --jq ".[] | select(.title == \"$title\") | .number" | head -n1)
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --body-file "$path"
+          else
+            gh issue create --title "$title" --label digest --body-file "$path"
+          fi
+
+  deploy:
+    needs: update
+    uses: ./.github/workflows/pages.yml

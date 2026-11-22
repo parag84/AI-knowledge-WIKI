@@ -1,0 +1,8 @@
+# Transcripts and downloaded media are never committed or published.
+.cache/
+_site/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.env
