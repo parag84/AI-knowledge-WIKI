@@ -66,5 +66,5 @@ def main(argv: list[str] | None = None) -> int:
     text = json.dumps(summary, indent=2)
     print(text)
     if args.summary_out:
-        Path(args.summary_out).write_text(text)
+        Path(args.summary_out).write_text(text, encoding="utf-8")
     return 0
