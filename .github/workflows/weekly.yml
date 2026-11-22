@@ -33,7 +33,9 @@ jobs:
     timeout-minutes: 180
     defaults:
       run:
-        shell: bash # Git Bash on Windows
+        # Windows PowerShell 5.1 ships with every Windows install. (A bare `bash` can resolve to the WSL
+        # launcher in System32 instead of Git Bash, so the steps avoid bash entirely.)
+        shell: powershell
     env:
       PYTHONUTF8: "1"
     steps:
@@ -41,14 +43,19 @@ jobs:
         with:
           ref: main
 
-      # Python comes from the PC (installed for all users, on PATH); a fresh venv keeps it isolated.
+      # Python 3.12 is installed for all users on the PC. The `py` launcher finds it regardless of PATH order;
+      # a fresh venv keeps the job isolated.
       - name: Python environment
         run: |
-          python -m venv .venv
-          if [ -f .venv/Scripts/python.exe ]; then PY="$PWD/.venv/Scripts/python.exe"; else PY="$PWD/.venv/bin/python"; fi
-          "$PY" -m pip install -q --upgrade pip
-          "$PY" -m pip install -q -r requirements.txt
-          echo "PY=$PY" >> "$GITHUB_ENV"
+          if (Get-Command py -ErrorAction SilentlyContinue) { py -3.12 -m venv .venv } else { python -m venv .venv }
+          if ($LASTEXITCODE) { exit 1 }
+          $py = Join-Path $PWD ".venv\Scripts\python.exe"
+          & $py -m pip install -q --upgrade pip
+          if ($LASTEXITCODE) { exit 1 }
+          & $py -m pip install -q -r requirements.txt
+          if ($LASTEXITCODE) { exit 1 }
+          & $py --version
+          [IO.File]::AppendAllText($env:GITHUB_ENV, "PY=$py`n")
 
       # Transcripts live only in this cache (never committed or published).
       - uses: actions/cache@v4
@@ -65,23 +72,24 @@ jobs:
           BACKFILL_DAYS: ${{ inputs.backfill_days }}
           MAX_VIDEOS: ${{ inputs.max_videos }}
         run: |
-          args=()
-          [ -n "$BACKFILL_DAYS" ] && args+=(--backfill-days "$BACKFILL_DAYS")
-          [ -n "$MAX_VIDEOS" ] && args+=(--max-videos "$MAX_VIDEOS")
-          "$PY" -m hub run --summary-out "$RUNNER_TEMP/summary.json" "${args[@]}"
+          $a = @()
+          if ($env:BACKFILL_DAYS) { $a += @("--backfill-days", $env:BACKFILL_DAYS) }
+          if ($env:MAX_VIDEOS) { $a += @("--max-videos", $env:MAX_VIDEOS) }
+          & $env:PY -m hub run --summary-out "$env:RUNNER_TEMP\summary.json" @a
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
 
       - name: Commit results
         run: |
           git config user.name "knowledge-hub-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A data knowledge digests config/topics.yaml
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            msg=$("$PY" -c "import json,sys; print(json.load(open(sys.argv[1], encoding='utf-8'))['commit_message'])" "$RUNNER_TEMP/summary.json")
-            git commit -m "$msg"
-            git push origin HEAD:main
-          fi
+          git diff --cached --quiet
+          if ($LASTEXITCODE -eq 0) { Write-Output "No changes to commit"; exit 0 }
+          $msg = & $env:PY -c "import json,sys; print(json.load(open(sys.argv[1], encoding='utf-8'))['commit_message'])" "$env:RUNNER_TEMP\summary.json"
+          git commit -m "$msg"
+          if ($LASTEXITCODE) { exit 1 }
+          git push origin HEAD:main
+          if ($LASTEXITCODE) { exit 1 }
 
       - name: Open or update the digest issue
         uses: actions/github-script@v7

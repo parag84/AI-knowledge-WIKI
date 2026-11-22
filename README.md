@@ -38,8 +38,8 @@ One-time setup on the PC:
 
 1. Install **Python 3.12** from <https://www.python.org/downloads/windows/>. In the installer tick
    **Add python.exe to PATH**, choose **Customize installation → Install Python for all users**.
-2. Install **Git for Windows** from <https://git-scm.com/download/win> with the default options (this provides
-   the Git Bash that the workflow steps use).
+2. Install **Git for Windows** from <https://git-scm.com/download/win> with the default options. The workflow
+   steps run in Windows PowerShell and start Python through the `py` launcher, so nothing else is needed.
 3. In GitHub: **Settings → Actions → Runners → New self-hosted runner → Windows (x64)**. Open **PowerShell
    as Administrator** and run the *Download* commands shown there, then the *Configure* command. When it asks:
    - runner group, name, work folder: press Enter for the defaults
