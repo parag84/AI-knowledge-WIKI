@@ -20,11 +20,18 @@ from .youtube import Getter, YouTubeError, list_uploads_since, resolve_channel, 
 log = logging.getLogger(__name__)
 
 
-def fetch_new_videos(cfg: Config, store: Store, get: Getter, since: datetime) -> dict:
-    """Add newly published videos to the store. Returns counts and per-channel errors."""
+def fetch_new_videos(cfg: Config, store: Store, get: Getter, now: datetime,
+                     backfill_days: int | None = None) -> dict:
+    """Add newly published videos to the store. Returns counts, per-channel errors and the earliest window start.
+
+    Each channel keeps its own watermark (`last_fetched`), so a channel that fails this week is fetched from its
+    own last success next week and none of its uploads are skipped.
+    """
     min_dur = int(cfg.setting("fetch.min_duration_seconds", 180))
+    backfill = timedelta(days=backfill_days or int(cfg.setting("fetch.backfill_days", 30)))
+    overlap = timedelta(hours=int(cfg.setting("fetch.overlap_hours", 24)))
     resolved = store.state.setdefault("channels", {})
-    added, short, errors = 0, 0, []
+    added, short, errors, windows = 0, 0, [], []
     for ch in cfg.channels:
         key = ch.get("channel_id") or ch.get("handle")
         try:
@@ -33,6 +40,9 @@ def fetch_new_videos(cfg: Config, store: Store, get: Getter, since: datetime) ->
                 info = {**resolve_channel(get, ch), "key": key}
                 resolved[ch["name"]] = info
                 log.info("resolved %s -> %s (%s)", ch["name"], info["channel_id"], info["title"])
+            last = info.get("last_fetched")
+            since = now - backfill if backfill_days is not None or not last else parse_dt(last) - overlap
+            windows.append(since)
             ids = [i for i in list_uploads_since(get, info["uploads"], since) if i not in store.videos]
             for d in video_details(get, ids):
                 if d["live"] in ("live", "upcoming"):
@@ -46,10 +56,12 @@ def fetch_new_videos(cfg: Config, store: Store, get: Getter, since: datetime) ->
                     "description": d["description"], "thumbnail_url": d["thumbnail_url"], "status": status,
                     "discovered_at": utcnow().date().isoformat(), "transcript_attempts": 0,
                 }
+            info["last_fetched"] = now.isoformat()
         except (YouTubeError, KeyError, requests.RequestException) as e:
             log.error("channel %s failed: %s", ch.get("name"), e)
             errors.append(f"{ch.get('name')}: {e}")
-    return {"added": added, "skipped_short": short, "errors": errors}
+    return {"added": added, "skipped_short": short, "errors": errors,
+            "since": min(windows).isoformat() if windows else ""}
 
 
 def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_videos: int) -> dict:
@@ -60,9 +72,10 @@ def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_v
     queue = sorted((v for v in store.videos.values() if v["status"] in ("pending", "transcript_missing", "failed")),
                    key=lambda v: v["published_at"], reverse=True)
     analyzed, missing, failed, proposed = [], 0, 0, []
+    attempts = 0  # Claude calls made, successful or not: this is what the spend cap limits
     new_insight_ids: set[str] = set()
     for v in queue:
-        if len(analyzed) >= max_videos:
+        if attempts >= max_videos:
             break
         segs, source = get_transcript(v["id"], cfg.paths.transcripts)
         if not segs:
@@ -70,6 +83,7 @@ def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_v
             v["status"] = "transcript_unavailable" if v["transcript_attempts"] >= max_attempts else "transcript_missing"
             missing += 1
             continue
+        attempts += 1
         try:
             a = analyze_video(cfg, llm, v, segs)
         except LLMError as e:
@@ -128,34 +142,50 @@ def run(cfg: Config, *, get: Getter | None, llm: JSONModel, today: date | None =
     today = today or now.date()
     store = Store(cfg.paths.data)
 
-    last = store.state.get("last_success_run")
-    if backfill_days is not None or not last:
-        since = now - timedelta(days=backfill_days or int(cfg.setting("fetch.backfill_days", 30)))
-    else:
-        since = parse_dt(last) - timedelta(hours=int(cfg.setting("fetch.overlap_hours", 24)))
-
-    fetched = {"added": 0, "skipped_short": 0, "errors": []}
+    fetched = {"added": 0, "skipped_short": 0, "errors": [], "since": ""}
     if fetch and get is not None:
-        fetched = fetch_new_videos(cfg, store, get, since)
+        fetched = fetch_new_videos(cfg, store, get, now, backfill_days)
         store.save()  # keep discovered IDs even if a later step fails
 
     cap = max_videos if max_videos is not None else int(cfg.setting("analysis.max_videos_per_run", 40))
     proc = process_videos(cfg, store, llm, today, cap)
     store.save()
 
-    # Freshness first so stale/archived status is current, then reconcile every touched topic.
-    fresh = apply_freshness(cfg, store, today)
-    touched = set()
-    for iid in proc["new_insight_ids"] | set(fresh["stale"]) | set(fresh["archived"]):
-        touched.update(store.insights[iid].get("topics", []))
-    totals = {"superseded": 0, "reinforced": 0}
-    for slug in sorted(t for t in touched if t in cfg.topic_slugs):
-        try:
-            c = reconcile_topic(cfg, llm, store, slug, proc["new_insight_ids"], today)
-            totals = {k: totals[k] + c[k] for k in totals}
-        except LLMError as e:
-            log.error("reconcile %s failed: %s", slug, e)
+    # Reconciliation work is persisted per topic and cleared only after a successful call, so a failed
+    # call is retried on the next run with the same new insights.
+    pending: dict[str, list[str]] = store.state.setdefault("pending_reconcile", {})
+    for iid in sorted(proc["new_insight_ids"]):
+        for t in store.insights[iid].get("topics", []):
+            if iid not in pending.setdefault(t, []):
+                pending[t].append(iid)
     store.save()
+    totals = {"superseded": 0, "reinforced": 0}
+
+    def reconcile_pending(slugs: set[str]) -> None:
+        for slug in sorted(slugs):
+            if slug not in cfg.topic_slugs:
+                pending.pop(slug, None)
+                continue
+            try:
+                c = reconcile_topic(cfg, llm, store, slug, set(pending.get(slug, [])), today)
+                for k in totals:
+                    totals[k] += c[k]
+                pending.pop(slug, None)
+            except LLMError as e:
+                log.error("reconcile %s failed, will retry next run: %s", slug, e)
+            store.save()
+
+    # 1) Reconcile new evidence first, so a confirming video can reinforce an old insight before it ages out.
+    reconcile_pending(set(pending))
+    # 2) Then flag stale / archive what is still unreinforced.
+    fresh = apply_freshness(cfg, store, today)
+    # 3) Rewrite syntheses of topics whose insights changed status, from active insights only.
+    changed = set()
+    for iid in fresh["stale"] + fresh["archived"]:
+        changed.update(store.insights[iid].get("topics", []))
+    for slug in changed:
+        pending.setdefault(slug, [])
+    reconcile_pending(changed)
 
     render_all(cfg, store)
     try:
@@ -167,7 +197,7 @@ def run(cfg: Config, *, get: Getter | None, llm: JSONModel, today: date | None =
     summary = {
         "week": iso_week(today),
         "date": today.isoformat(),
-        "since": since.isoformat(),
+        "since": fetched["since"],
         "new_videos_found": fetched["added"],
         "skipped_short": fetched["skipped_short"],
         "analyzed": len(proc["analyzed"]),
@@ -189,9 +219,7 @@ def run(cfg: Config, *, get: Getter | None, llm: JSONModel, today: date | None =
                                  f"{summary['superseded']} superseded")
     if summary["stale"] or summary["archived"]:
         summary["commit_message"] += f", {summary['stale']} stale, {summary['archived']} archived"
-    # A run with a total fetch failure (every channel errored) doesn't advance the window.
-    if not fetch or len(fetched["errors"]) < len(cfg.channels):
-        store.state["last_success_run"] = now.isoformat()
+    store.state["last_success_run"] = now.isoformat()  # informational; fetch windows are per channel
     store.state["last_run"] = summary
     store.save()
     return summary

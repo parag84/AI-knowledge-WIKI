@@ -207,3 +207,110 @@ def test_llm_failure_marks_video_failed_and_run_completes(repo, yt_get, fake_llm
     # Next run retries and succeeds.
     s = run(load_config(repo), get=None, llm=fake_llm(), fetch=False, now=NOW)
     assert s["analyzed"] == 1
+
+
+def test_failed_channel_keeps_its_own_fetch_window(repo, yt_get, fake_llm):
+    (repo / "config/channels.yaml").write_text(
+        'channels:\n  - name: AI Engineer\n    handle: "@aiDotEngineer"\n  - name: Broken\n    handle: "@broken"\n')
+    from hub.youtube import YouTubeError
+
+    def get(endpoint, params):
+        if params.get("forHandle") == "@broken":
+            raise YouTubeError("boom")
+        return yt_get(endpoint, params)
+
+    run(load_config(repo), get=get, llm=fake_llm(), now=NOW)
+    chans = Store(repo / "data").state["channels"]
+    assert chans["AI Engineer"]["last_fetched"] == NOW.isoformat()
+    assert "Broken" not in chans  # never succeeded, so next run still backfills it
+
+    # A week later the broken channel recovers: it is fetched from the full backfill window, not last week.
+    seen = []
+
+    def get2(endpoint, params):
+        if endpoint == "channels" and params.get("forHandle") == "@broken":
+            return {"items": [{"id": "UCb", "snippet": {"title": "B"},
+                               "contentDetails": {"relatedPlaylists": {"uploads": "UUb"}}}]}
+        if endpoint == "playlistItems" and params["playlistId"] == "UUb":
+            seen.append(params)
+            return {"items": [{"contentDetails": {"videoId": "brk00000001",
+                                                  "videoPublishedAt": "2026-11-15T00:00:00Z"}}]}
+        if endpoint == "videos" and "brk00000001" in params["id"]:
+            return {"items": [{"id": "brk00000001", "snippet": {
+                "title": "Missed last week", "channelTitle": "B", "channelId": "UCb",
+                "publishedAt": "2026-11-15T00:00:00Z", "description": "", "liveBroadcastContent": "none",
+                "thumbnails": {}}, "contentDetails": {"duration": "PT20M"}}]}
+        return yt_get(endpoint, params)
+
+    run(load_config(repo), get=get2, llm=fake_llm(), now=datetime(2026, 11, 29, 6, tzinfo=timezone.utc), max_videos=0)
+    assert seen and "brk00000001" in Store(repo / "data").videos
+
+
+def test_failed_analysis_counts_toward_cap(repo, yt_get, fake_llm):
+    from hub.llm import LLMError
+
+    store = Store(repo / "data")
+    for n in range(3):
+        vid = f"extra000000{n}"
+        store.videos[vid] = {"id": vid, "title": f"x{n}", "channel": "c", "channel_id": "c",
+                             "published_at": f"2026-11-1{n}T00:00:00Z", "duration_s": 900,
+                             "url": f"https://www.youtube.com/watch?v={vid}", "description": "",
+                             "thumbnail_url": "", "status": "pending", "transcript_attempts": 0}
+        (repo / f".cache/transcripts/{vid}.json").write_text('[{"start": 0, "text": "x"}]')
+    store.save()
+
+    class Failing(fake_llm):
+        def call_json(self, **kw):
+            self.calls.append(kw)
+            raise LLMError("refused")
+
+    llm = Failing()
+    s = run(load_config(repo), get=None, llm=llm, fetch=False, now=NOW, max_videos=2)
+    assert s["failed"] == 2  # stopped at the cap even though nothing succeeded
+
+
+def test_failed_reconcile_is_retried_next_run(repo, yt_get, fake_llm):
+    from hub.llm import LLMError
+
+    class ReconcileFails(fake_llm):
+        def call_json(self, *, system, user, schema, max_tokens=None):
+            if "decisions" in schema["properties"]:
+                raise LLMError("boom")
+            return super().call_json(system=system, user=user, schema=schema)
+
+    run(load_config(repo), get=yt_get, llm=ReconcileFails(), now=NOW)
+    pending = Store(repo / "data").state["pending_reconcile"]
+    assert set(pending) == {"ux-for-ai", "mcp-tools"}
+
+    llm = fake_llm()
+    run(load_config(repo), get=None, llm=llm, fetch=False, now=NOW)
+    recon_calls = [c for c in llm.calls if c["kind"] == "decisions"]
+    assert len(recon_calls) == 2 and all("vid00000001-" in c["user"].split("New insights")[1] for c in recon_calls)
+    assert Store(repo / "data").state["pending_reconcile"] == {}
+
+
+def test_confirming_video_saves_insight_from_archive(repo, yt_get, fake_llm):
+    run(load_config(repo), get=yt_get, llm=fake_llm(), now=NOW)
+    store = Store(repo / "data")
+    store.videos["vid00000004"] = {
+        "id": "vid00000004", "title": "Still true", "channel": "Claude", "channel_id": "x",
+        "published_at": "2027-05-20T10:00:00Z", "duration_s": 900, "url": "https://www.youtube.com/watch?v=vid00000004",
+        "description": "", "thumbnail_url": "", "status": "pending", "transcript_attempts": 0}
+    store.save()
+    (repo / ".cache/transcripts/vid00000004.json").write_text('[{"start": 0, "text": "x"}]')
+    vid = {"summary": "s", "topics": ["ux-for-ai"], "proposed_topics": [], "relevance": 5, "relevance_reason": "r",
+           "insights": [{"text": "Inline approvals still win.", "facts": [], "topics": ["ux-for-ai"]}],
+           "tools_mentioned": [], "applies_to_work": "a", "best_moments": [], "has_visual_content": False}
+
+    def rec(user):
+        if "vid00000004-1" in user:
+            return {"decisions": [{"action": "reinforce", "old_id": "vid00000001-1", "new_id": "vid00000004-1",
+                                   "reason": "confirmed"}], "synthesis": "x", "open_questions": []}
+        return None
+
+    # 185 days after the original video: without the reinforce it would be archived in this run.
+    run(load_config(repo), get=None, llm=fake_llm(video=vid, reconcile=rec), fetch=False,
+        now=datetime(2027, 5, 22, 6, tzinfo=timezone.utc))
+    store = Store(repo / "data")
+    assert store.insights["vid00000001-1"]["status"] == "active"
+    assert store.insights["vid00000001-3"]["status"] == "archived"
