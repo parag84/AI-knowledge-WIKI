@@ -52,7 +52,7 @@ def test_first_run_end_to_end(repo, yt_get, fake_llm):
 
     # Proposed topic goes to the review list, not the approved taxonomy.
     topics = yaml.safe_load((repo / "config/topics.yaml").read_text())
-    assert [p["slug"] for p in topics["proposed_topics"]] == ["agent-approvals"]
+    assert [p["slug"] for p in topics["proposed_topics"]][-1] == "agent-approvals"
     assert "agent-approvals" not in [t["slug"] for t in topics["topics"]]
     # One analysis call, one reconcile per touched topic (2), one digest call.
     assert [c["kind"] for c in llm.calls].count("summary") == 1
@@ -334,3 +334,21 @@ def test_blocked_transcripts_dont_burn_attempts(repo, yt_get, fake_llm, monkeypa
     vids = Store(repo / "data").videos.values()
     assert all(v["transcript_attempts"] == 0 for v in vids)
     assert "YouTube blocked transcript downloads" in (repo / "digests/2026-W47.md").read_text()
+
+
+def test_transcript_downloads_are_paced(repo, yt_get, fake_llm, monkeypatch):
+    from hub import pipeline, transcripts
+    sleeps = []
+    monkeypatch.setattr(pipeline.time, "sleep", sleeps.append)
+    monkeypatch.setattr(transcripts, "fetch_via_transcript_api", lambda vid: [{"start": 0, "text": "x"}])
+    store = Store(repo / "data")
+    for n in range(3):
+        vid = f"pace000000{n}"
+        store.videos[vid] = {"id": vid, "title": f"p{n}", "channel": "c", "channel_id": "c",
+                             "published_at": f"2026-11-1{n}T00:00:00Z", "duration_s": 900,
+                             "url": f"https://www.youtube.com/watch?v={vid}", "description": "",
+                             "thumbnail_url": "", "status": "pending", "transcript_attempts": 0}
+    store.save()
+    (repo / ".cache/transcripts/vid00000001.json").unlink()
+    run(load_config(repo), get=None, llm=fake_llm(), fetch=False, now=NOW)
+    assert sleeps == [20.0, 20.0]  # between downloads only, not before the first

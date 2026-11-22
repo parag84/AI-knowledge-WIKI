@@ -6,6 +6,7 @@ fetch:
 analysis:
   max_videos_per_run: 40     # spend cap (or --max-videos); leftovers stay pending for next week
   max_transcript_attempts: 4 # weeks to keep retrying a video whose transcript can't be fetched
+  transcript_delay_seconds: 20 # pause between transcript downloads; YouTube rate-limits fast bursts
 llm:
   model: claude-opus-5-5     # e.g. claude-sonnet-5-5 or claude-haiku-5-5 to cut cost
   effort: medium             # low | medium | high

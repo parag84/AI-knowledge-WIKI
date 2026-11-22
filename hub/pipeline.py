@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import time
 
 import requests
 from datetime import date, datetime, timedelta
@@ -80,10 +81,15 @@ def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_v
     new_insight_ids: set[str] = set()
     streak: list[dict] = []
     blocked = False
+    source_delay = float(cfg.setting("analysis.transcript_delay_seconds", 0) or 0)
+    fetched_any = False
     for v in queue:
         if attempts >= max_videos:
             break
+        if fetched_any and source_delay:
+            time.sleep(source_delay)  # pace requests so YouTube doesn't rate-limit the connection
         segs, source = get_transcript(v["id"], cfg.paths.transcripts)
+        fetched_any = source != "cache"
         if not segs:
             v["transcript_attempts"] = v.get("transcript_attempts", 0) + 1
             v["status"] = "transcript_unavailable" if v["transcript_attempts"] >= max_attempts else "transcript_missing"
