@@ -129,5 +129,5 @@ def add_proposed_topics(cfg: Config, proposals: list[dict]) -> list[dict]:
         tail = yaml.safe_dump(
             {"proposed_topics": cfg.proposed_topics}, sort_keys=False, allow_unicode=True, width=120
         )
-        path.write_text(head + "\n" + tail, encoding="utf-8")
+        path.write_text(head + "\n" + tail, encoding="utf-8", newline="\n")
     return added

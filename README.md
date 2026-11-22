@@ -15,15 +15,40 @@ GitHub Pages.
      *YouTube Data API v3*, then go to *Credentials → Create credentials → API key*. Restrict the key to that API.
      A weekly run uses about 50 quota units out of the free 10,000 per day.
    - `ANTHROPIC_API_KEY`: from <https://console.anthropic.com/settings/keys>.
-   - Optional: `TRANSCRIPT_PROXY_URL`, an HTTP(S) proxy URL (for example a residential proxy). Use it only if
-     transcripts keep failing because YouTube blocks GitHub runner IPs.
+   - `TRANSCRIPT_PROXY_URL`: needed in practice, because YouTube blocks transcript downloads from GitHub's
+     servers. Use a **rotating residential** proxy. With Webshare, buy a "Residential" plan (not "Proxy Server"
+     or "Static Residential"), take the Proxy Username and Password from
+     <https://dashboard.webshare.io/proxy/settings>, and set the secret to
+     `http://<username>-rotate:<password>@p.webshare.io:80/`.
 2. **Enable Pages:** go to *Settings → Pages → Build and deployment → Source* and choose **GitHub Actions**.
 3. **Allow the workflow to push:** go to *Settings → Actions → General → Workflow permissions* and choose
    **Read and write permissions**.
-4. **Run the first backfill:** go to *Actions → Weekly knowledge update → Run workflow* and set
+4. **Run the first backfill:** (after the self-hosted runner below is set up) go to *Actions → Weekly knowledge update → Run workflow* and set
    `backfill_days` to `30`. Later runs pick up from the last successful run automatically.
 5. **Review** the first digest issue and the taxonomy (`config/topics.yaml`, including `proposed_topics`). See
    [Reviewing the taxonomy](#reviewing-the-taxonomy).
+
+## Self-hosted runner (Windows PC)
+
+YouTube blocks transcript downloads from GitHub's own servers, so the weekly **update** job runs on your PC
+(`runs-on: [self-hosted, knowledge-hub]`). Publishing the dashboard still runs on GitHub. The job starts on
+Sundays at 19:00 UTC. If the PC is off, it waits in the queue for up to 24 hours and starts as soon as the PC is on.
+
+One-time setup on the PC:
+
+1. Install **Python 3.12** from <https://www.python.org/downloads/windows/>. In the installer tick
+   **Add python.exe to PATH**, choose **Customize installation → Install Python for all users**.
+2. Install **Git for Windows** from <https://git-scm.com/download/win> with the default options (this provides
+   the Git Bash that the workflow steps use).
+3. In GitHub: **Settings → Actions → Runners → New self-hosted runner → Windows (x64)**. Open **PowerShell
+   as Administrator** and run the *Download* commands shown there, then the *Configure* command. When it asks:
+   - runner group, name, work folder: press Enter for the defaults
+   - **labels: type `knowledge-hub`**
+   - **run as a service: `Y`**, then press Enter to accept the default service account
+4. Restart the PC once so the service picks up the new PATH. The runner shows as **Idle** on the Runners page.
+5. Security, because this repo is public: **Settings → Actions → General → Approval for running fork pull
+   request workflows from contributors → Require approval for all external contributors.** This stops a
+   stranger's pull request from running code on your PC.
 
 ## How a run works
 

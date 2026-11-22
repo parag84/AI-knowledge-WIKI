@@ -39,7 +39,8 @@ def week_bounds(d: date) -> tuple[date, date]:
     return start, start + timedelta(days=6)
 
 
-def build_digest(cfg: Config, llm: JSONModel | None, store: Store, today: date, repo_url: str = "") -> tuple[str, str]:
+def build_digest(cfg: Config, llm: JSONModel | None, store: Store, today: date, repo_url: str = "",
+                 notice: str = "") -> tuple[str, str]:
     """Write the digest for today's ISO week. Returns (path relative to repo root, title)."""
     week = iso_week(today)
     start, end = week_bounds(today)
@@ -59,6 +60,8 @@ def build_digest(cfg: Config, llm: JSONModel | None, store: Store, today: date, 
     title = f"Weekly AI digest {week}"
     lines = [f"# {title}", "", f"_{start.isoformat()} to {end.isoformat()} · {len(new_videos)} new videos · "
              f"{len(new)} new insights · {len(changes)} knowledge changes_", ""]
+    if notice:
+        lines += [f"> ⚠️ {notice}", ""]
 
     result = None
     if llm and (new or changes):
