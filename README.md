@@ -15,8 +15,11 @@ GitHub Pages.
      *YouTube Data API v3*, then go to *Credentials → Create credentials → API key*. Restrict the key to that API.
      A weekly run uses about 50 quota units out of the free 10,000 per day.
    - `ANTHROPIC_API_KEY`: from <https://console.anthropic.com/settings/keys>.
-   - Optional: `TRANSCRIPT_PROXY_URL`, an HTTP(S) proxy URL (for example a residential proxy). Use it only if
-     transcripts keep failing because YouTube blocks GitHub runner IPs.
+   - `TRANSCRIPT_PROXY_URL`: needed in practice, because YouTube blocks transcript downloads from GitHub's
+     servers. Use a **rotating residential** proxy. With Webshare, buy a "Residential" plan (not "Proxy Server"
+     or "Static Residential"), take the Proxy Username and Password from
+     <https://dashboard.webshare.io/proxy/settings>, and set the secret to
+     `http://<username>-rotate:<password>@p.webshare.io:80/`.
 2. **Enable Pages:** go to *Settings → Pages → Build and deployment → Source* and choose **GitHub Actions**.
 3. **Allow the workflow to push:** go to *Settings → Actions → General → Workflow permissions* and choose
    **Read and write permissions**.

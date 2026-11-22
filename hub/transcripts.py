@@ -31,12 +31,20 @@ def fetch_via_transcript_api(video_id: str) -> list[dict] | None:
         api = YouTubeTranscriptApi(
             proxy_config=GenericProxyConfig(http_url=proxy, https_url=proxy) if proxy else None
         )
-        fetched = api.fetch(video_id, languages=("en", "en-US", "en-GB"))
-        segs = [{"start": float(s.start), "text": s.text} for s in fetched]
-        return segs or None
-    except Exception as e:  # noqa: BLE001 - library raises many types; all mean "not available"
-        log.warning("transcript-api failed for %s: %s", video_id, type(e).__name__)
+    except Exception as e:  # noqa: BLE001
+        log.warning("transcript-api setup failed: %s", type(e).__name__)
         return None
+    # A rotating residential proxy gives a new IP per request, so a blocked request is worth retrying.
+    for attempt in range(3 if _proxy() else 1):
+        try:
+            fetched = api.fetch(video_id, languages=("en", "en-US", "en-GB"))
+            segs = [{"start": float(s.start), "text": s.text} for s in fetched]
+            return segs or None
+        except Exception as e:  # noqa: BLE001 - library raises many types; all mean "not available"
+            log.warning("transcript-api failed for %s (try %d): %s", video_id, attempt + 1, type(e).__name__)
+            if type(e).__name__ not in ("RequestBlocked", "IpBlocked"):
+                break
+    return None
 
 
 def parse_json3(data: dict) -> list[dict]:
