@@ -1,0 +1,73 @@
+{
+  "agents": {
+    "open_questions": [
+      "What format works best for encoding design-system and accessibility rules so agents reliably follow them (tokens, lint rules, structured specs, MCP-exposed guidelines)?",
+      "What concrete signals or metrics justify removing a human review checkpoint from an agent loop, and how is that trust revoked when quality regresses?",
+      "How should design, risk and compliance teams participate in one- to two-day agent loops without becoming the new bottleneck?",
+      "As autonomous loops extend into product and release stages, what remains a mandatory human decision point?"
+    ],
+    "synthesis": "**Agentic delivery is moving the bottleneck onto design and governance (as of Nov 2026).** As agents compress build and test, constraints move upstream to requirements, downstream to release, and \"sideways\" to parallel functions such as risk, compliance and design. In one bank's customer-facing app, the color scheme and colorblind-accessibility rules had to be encoded directly into the agents. For Parag, this means design-system rules, tokens and accessibility constraints are becoming machine-consumable inputs to agent loops, not just documentation for humans.\n\n**Operating model: short loops with human validation (Nov 2026).** Leading teams are replacing two-week Scrum sprints with Kanban-style one- to two-day loops. Agents run the \"night shift\" and humans validate the results. Autonomous loops are expanding from build and test toward product and release stages. Human review checkpoints are removed once a loop has earned confidence. This has direct AX implications: the supervision and approval UI has to support checkpoints that can be added, relaxed and eventually retired as trust grows.",
+    "updated": "2026-11-22"
+  },
+  "coding-agents": {
+    "open_questions": [
+      "How should design-system rules (tokens, accessibility, brand) be packaged so coding agents reliably apply them? Options include skills, golden examples and lint checkpoints.",
+      "When human review checkpoints are removed from agent loops, what supervision and audit UX keeps trust and catches quality regressions?",
+      "Where do designers sit in 2–4 person definer/builder pods? Are they definers, or a 'sideways' bottleneck function?",
+      "Will the 2x gains reported by top enterprises spread, or do the declining per-PR quality trends cap them?",
+      "Who curates and governs organizational skill libraries, and will standard registries emerge?"
+    ],
+    "synthesis": "**Where the bottleneck moves (as of Nov 2026):** As coding agents compress build and test, the constraint shifts upstream to requirements, downstream to release, and sideways to parallel functions like risk, compliance and **design**. One bank had to encode its customer-app color-scheme and colorblind-accessibility rules directly into its agents. For Parag, design standards and tokens become agent inputs, not just human guidelines. Quality is also dropping per developer and per PR as generation speeds up. The recommended fix is to feed agents curated **golden examples** rather than the codebase average. Teams should also encode standards at every PDLC checkpoint instead of relying on end-of-pipeline gates. That is a strong argument for well-governed reference components and machine-readable design-system rules.\n\n**Curation over availability:** Skills are abundant but noisy. One client found about 1,700 downloadable skills just for writing a PRD. The advice is for organizations to curate a small set that fits their context, a governance problem much like component-library curation.\n\n**Workflow and org shape (McKinsey, Nov 2026):** The top 20–25% of surveyed large enterprises report about 2x end-to-end gains from AI in software development. Most still see 10–20%. Leading teams swap two-week sprints for Kanban-style one- to two-day loops in which agents run the \"night shift\" and humans validate. Review checkpoints are removed once confidence in a loop is established. Autonomous loops are expanding from build and test into the product and release stages. Pods shrink to 2–4 people with collapsed roles: product moves toward \"definers\" and dev/QA toward \"builders\". Halving pod size and doubling team count is cited as a short-term acceleration trick.",
+    "updated": "2026-11-22"
+  },
+  "evals": {
+    "open_questions": [
+      "How should a design system package its golden examples (components, tokens, docs) so coding agents reliably follow them, and how is adherence measured?",
+      "Which PDLC checkpoints, such as design handoff, PR or Storybook, can carry automated design-system conformance evals, and what tools support this for Web Components?",
+      "Can AI scoring of work value and intent be trusted, and how would you validate an LLM-as-judge used for prioritisation rather than correctness?",
+      "What metrics show whether agent-generated code quality is actually improving per PR over time, as regression signals rather than throughput?"
+    ],
+    "synthesis": "**Evals are now running behind AI code generation (as of Nov 2026).** As agents speed up code output, quality is falling per developer and per PR. The current recommendation has two parts. First, give agents curated \"golden examples\" instead of letting them learn from the average of the codebase. Second, encode standards at every PDLC checkpoint rather than counting on end-of-pipeline quality gates (2026-11-08). For Parag this maps directly onto design systems. Canonical component examples, token usage rules and governance checks can work as the golden set and as continuous eval criteria for agent-generated UI in Lit and Web Components. That is more reliable than a final review step.\n\n**Measuring impact is the least mature area.** Some organisations are experimenting with using AI itself to score the value and intent of work items, so they can route tokens and compute to the highest-value tasks (2026-11-08). This is an early form of LLM-as-judge applied to prioritisation rather than to output correctness. It is relevant to intent-driven design and to how agentic UX might show value and priority signals to the people supervising agents.",
+    "updated": "2026-11-22"
+  },
+  "infra-cost": {
+    "open_questions": [
+      "How reliable is AI-based scoring of work value and intent, and who audits or overrides those scores?",
+      "Should agentic UIs show users token cost or value-priority signals, and how would that affect trust in delegation?",
+      "What metrics or observability tools are emerging to measure the business impact of AI token spend?",
+      "How should developer portals present pricing and usage budgets for agent-driven API consumption?"
+    ],
+    "synthesis": "**Cost control is still mostly guesswork (as of Nov 2026).** The only signal on this page so far is that measuring the impact of AI spend is the least mature part of the stack (2026-11-08). Some organisations are experimenting with using AI itself to score the value and intent of work items, so that token budgets and compute go to the highest-value tasks first.\n\nFor Parag's agentic UX and developer-portal work, this points to a design surface. Agents and portals may soon need to show users why a task got more or fewer resources, along with cost and value indicators. That would extend intent-driven design into budgeting and prioritisation. The page has no concrete data yet on serving, latency, caching, pricing or observability tooling.",
+    "updated": "2026-11-22"
+  },
+  "mcp-tools": {
+    "open_questions": [
+      "Who should own skill and tool curation inside an organization (platform team, design system team, or individual product teams), and what governance model works?",
+      "What trust and quality signals (provenance, ratings, evals, permissions) should a developer portal show to help people choose among many near-duplicate skills or MCP servers?",
+      "Will MCP registries or marketplaces add their own curation and verification, or will curation stay an internal, per-organization job?",
+      "How should agent UIs show which skills or tools an agent picked and why, so that users can supervise and trust those choices?"
+    ],
+    "synthesis": "**Curation now matters more than availability (as of Nov 2026).** For agent skills and tool packages, the bottleneck has moved from finding a capability to choosing one. One client found about 1,700 downloadable skills for the single task of writing a PRD. The practical response is for organizations to curate a small set of skills that fit their own context rather than exposing the whole marketplace.\n\n**What this means for Parag's work.** Treat skill and tool catalogs like a design system. They need governance, ownership, versioning and a short, vetted default set. In AI developer portals and agent UX, discovery, comparison and trust signals for curated skills become first-class design problems, not an afterthought.",
+    "updated": "2026-11-22"
+  },
+  "startups-product": {
+    "open_questions": [
+      "Does the \"halve pods, double teams\" acceleration hold beyond the short term, or does coordination cost (shared design systems, governance) erode it?",
+      "Where do UX/design roles land in the definer/builder split? Is design absorbed into definer, or does it remain a distinct specialist role?",
+      "What separates the top 20–25% of enterprises seeing ~2x gains from the majority stuck at 10–20%: tooling, process redesign or team structure?",
+      "How should design system governance adapt when many small pods (and their agents) consume and modify components in parallel?"
+    ],
+    "synthesis": "**AI is reshaping product team structure, and the gains are uneven (Nov 2026).** The clearest signal for how Parag's work gets organised: teams are shrinking to pods of 2–4 people with collapsed roles. Product roles move toward a **\"definer\"** (intent, specs, acceptance) and dev/QA roles toward a **\"builder\"** (8 Nov 2026). One short-term \"cheat code\" is to halve pod size and double the number of teams while keeping the same planning math. For a designer in agentic UX and design systems, this suggests design work will sit closer to the definer role. Specs, tokens and component contracts then become the main interface to builders and their agents.\n\n**Productivity reality check.** A McKinsey survey of a few hundred large enterprises (reported 8 Nov 2026) found that only the top 20–25% see about 2x end-to-end improvement from AI in software development. Most still report modest 10–20% gains, though that is up from meager gains in a survey at the end of the prior year. The gap suggests that operating-model changes, such as the smaller pods and role shifts above, matter more than tool adoption alone.",
+    "updated": "2026-11-22"
+  },
+  "ux-for-ai": {
+    "open_questions": [
+      "How should design-system rules, such as tokens and accessibility constraints, be packaged so agents reliably follow them? Options include linters, MCP resources or prompt context.",
+      "What signals or metrics justify removing human review checkpoints from an agent loop, and how should that trust threshold be shown in the UI?",
+      "How do design and compliance teams keep up with one- to two-day cycles without becoming the new bottleneck?",
+      "What does an effective review surface look like for humans validating overnight agent output?"
+    ],
+    "synthesis": "As of November 2026, agentic software delivery is moving the bottleneck away from build and test. Leading teams are replacing two-week Scrum sprints with Kanban-style loops of one to two days. Agents run the \"night shift\" and humans validate the results. Once a team trusts a loop, it removes the human review checkpoints. Autonomous loops are also spreading beyond build and test into the product and release stages.\n\nFor Parag, the key point is that design becomes a \"sideways\" constraint that has to be encoded into agents. One bank had to put its color-scheme and colorblind-accessibility rules into its agents for a customer-facing app (2026-11-08). This makes machine-readable design systems, tokens and accessibility rules part of the agent's working context. They are no longer just documentation for humans. It also makes supervision UX central: how people validate agent output overnight, and how they decide when a loop has earned enough trust to drop a checkpoint.",
+    "updated": "2026-11-22"
+  }
+}
