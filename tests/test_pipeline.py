@@ -314,3 +314,23 @@ def test_confirming_video_saves_insight_from_archive(repo, yt_get, fake_llm):
     store = Store(repo / "data")
     assert store.insights["vid00000001-1"]["status"] == "active"
     assert store.insights["vid00000001-3"]["status"] == "archived"
+
+
+def test_blocked_transcripts_dont_burn_attempts(repo, yt_get, fake_llm, monkeypatch):
+    from hub import transcripts
+    monkeypatch.setattr(transcripts, "fetch_via_transcript_api", lambda vid: None)
+    monkeypatch.setattr(transcripts, "fetch_via_ytdlp", lambda vid: None)
+    store = Store(repo / "data")
+    for n in range(8):
+        vid = f"blk0000000{n}"
+        store.videos[vid] = {"id": vid, "title": f"b{n}", "channel": "c", "channel_id": "c",
+                             "published_at": f"2026-11-1{n}T00:00:00Z", "duration_s": 900,
+                             "url": f"https://www.youtube.com/watch?v={vid}", "description": "",
+                             "thumbnail_url": "", "status": "pending", "transcript_attempts": 0}
+    store.save()
+    (repo / ".cache/transcripts/vid00000001.json").unlink()
+    s = run(load_config(repo), get=None, llm=fake_llm(), fetch=False, now=NOW)
+    assert s["transcripts_blocked"] is True and s["transcript_missing"] == 8
+    vids = Store(repo / "data").videos.values()
+    assert all(v["transcript_attempts"] == 0 for v in vids)
+    assert "YouTube blocked transcript downloads" in (repo / "digests/2026-W47.md").read_text()

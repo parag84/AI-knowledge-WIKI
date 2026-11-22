@@ -19,6 +19,10 @@ from .youtube import Getter, YouTubeError, list_uploads_since, resolve_channel, 
 
 log = logging.getLogger(__name__)
 
+# This many transcript failures in a row means YouTube is blocking this machine (e.g. GitHub runner IPs),
+# not that the videos lack captions. The run stops trying and doesn't count those failures against the videos.
+BLOCK_STREAK = 5
+
 
 def fetch_new_videos(cfg: Config, store: Store, get: Getter, now: datetime,
                      backfill_days: int | None = None) -> dict:
@@ -74,6 +78,8 @@ def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_v
     analyzed, missing, failed, proposed = [], 0, 0, []
     attempts = 0  # Claude calls made, successful or not: this is what the spend cap limits
     new_insight_ids: set[str] = set()
+    streak: list[dict] = []
+    blocked = False
     for v in queue:
         if attempts >= max_videos:
             break
@@ -82,7 +88,17 @@ def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_v
             v["transcript_attempts"] = v.get("transcript_attempts", 0) + 1
             v["status"] = "transcript_unavailable" if v["transcript_attempts"] >= max_attempts else "transcript_missing"
             missing += 1
+            streak.append(v)
+            if len(streak) >= BLOCK_STREAK:
+                blocked = True
+                for x in streak:  # undo: these failures were the block, not the videos
+                    x["transcript_attempts"] -= 1
+                    x["status"] = "transcript_missing"
+                log.warning("transcripts look blocked (%d failures in a row); stopping transcript fetches this run",
+                            len(streak))
+                break
             continue
+        streak = []
         attempts += 1
         try:
             a = analyze_video(cfg, llm, v, segs)
@@ -130,7 +146,9 @@ def process_videos(cfg: Config, store: Store, llm: JSONModel, today: date, max_v
 
     added_topics = add_proposed_topics(cfg, proposed)
     pending_left = sum(v["status"] in ("pending", "transcript_missing", "failed") for v in store.videos.values())
-    return {"analyzed": analyzed, "transcript_missing": missing, "failed": failed,
+    if blocked:
+        missing = pending_left
+    return {"analyzed": analyzed, "transcript_missing": missing, "failed": failed, "transcripts_blocked": blocked,
             "new_insight_ids": new_insight_ids, "proposed_topics": [p["slug"] for p in added_topics],
             "pending_left": pending_left}
 
@@ -188,11 +206,16 @@ def run(cfg: Config, *, get: Getter | None, llm: JSONModel, today: date | None =
     reconcile_pending(changed)
 
     render_all(cfg, store)
+    notice = ""
+    if proc["transcripts_blocked"]:
+        notice = (f"YouTube blocked transcript downloads from the runner this week, so {proc['pending_left']} "
+                  "videos are waiting. They are retried next run and don't lose a retry attempt. To fix this "
+                  "for good, set the `TRANSCRIPT_PROXY_URL` secret (see README).")
     try:
-        digest_path, digest_title = build_digest(cfg, llm, store, today, repo_url=repo_url)
+        digest_path, digest_title = build_digest(cfg, llm, store, today, repo_url=repo_url, notice=notice)
     except LLMError as e:
         log.error("digest call failed, writing a digest without the summary: %s", e)
-        digest_path, digest_title = build_digest(cfg, None, store, today, repo_url=repo_url)
+        digest_path, digest_title = build_digest(cfg, None, store, today, repo_url=repo_url, notice=notice)
 
     summary = {
         "week": iso_week(today),
@@ -203,6 +226,7 @@ def run(cfg: Config, *, get: Getter | None, llm: JSONModel, today: date | None =
         "analyzed": len(proc["analyzed"]),
         "new_insights": len(proc["new_insight_ids"]),
         "transcript_missing": proc["transcript_missing"],
+        "transcripts_blocked": proc["transcripts_blocked"],
         "failed": proc["failed"],
         "pending_left": proc["pending_left"],
         "superseded": totals["superseded"],
