@@ -3,68 +3,76 @@
     "AI Engineer": {
       "channel_id": "UCLKPca3kwwd-B59HNr-_lvA",
       "key": "@aiDotEngineer",
-      "last_fetched": "2026-11-22T19:15:50.220471+00:00",
+      "last_fetched": "2026-11-22T22:22:01.194482+00:00",
       "title": "AI Engineer",
       "uploads": "UULKPca3kwwd-B59HNr-_lvA"
     },
     "Anthropic": {
       "channel_id": "UCrDwWp7EBBv4NwvScIpBDOA",
       "key": "@anthropic-ai",
-      "last_fetched": "2026-11-22T19:15:50.220471+00:00",
+      "last_fetched": "2026-11-22T22:22:01.194482+00:00",
       "title": "Anthropic",
       "uploads": "UUrDwWp7EBBv4NwvScIpBDOA"
     },
     "Claude": {
       "channel_id": "UCV03SRZXJEz-hchIAogeJOg",
       "key": "@claude",
-      "last_fetched": "2026-11-22T19:15:50.220471+00:00",
+      "last_fetched": "2026-11-22T22:22:01.194482+00:00",
       "title": "Claude",
       "uploads": "UUV03SRZXJEz-hchIAogeJOg"
     },
     "Google Cloud Tech": {
       "channel_id": "UCJS9pqu9BzkAMNTmzNMNhvg",
       "key": "@googlecloudtech",
-      "last_fetched": "2026-11-22T19:15:50.220471+00:00",
+      "last_fetched": "2026-11-22T22:22:01.194482+00:00",
       "title": "Google Cloud Tech",
       "uploads": "UUJS9pqu9BzkAMNTmzNMNhvg"
     },
     "OpenAI": {
       "channel_id": "UCXZCJLdBC09xxGZ6gcdrc6A",
       "key": "@OpenAI",
-      "last_fetched": "2026-11-22T19:15:50.220471+00:00",
+      "last_fetched": "2026-11-22T22:22:01.194482+00:00",
       "title": "OpenAI",
       "uploads": "UUXZCJLdBC09xxGZ6gcdrc6A"
     }
   },
   "last_run": {
-    "analyzed": 1,
+    "analyzed": 22,
     "archived": 0,
     "channel_errors": [
       "Agentic AI Foundation: Channel 'Agentic AI Foundation' not found (@AgenticAIFoundation). Set `channel_id` in config/channels.yaml."
     ],
-    "commit_message": "weekly update 2026-W47: 1 new, 0 superseded",
+    "commit_message": "weekly update 2026-W47: 22 new, 0 superseded",
     "date": "2026-11-22",
     "digest": "digests/2026-W47.md",
     "digest_title": "Weekly AI digest 2026-W47",
     "failed": 0,
     "llm_usage": {
-      "cache_read_input_tokens": 7488,
-      "calls": 9,
-      "input_tokens": 11388,
-      "output_tokens": 6277
+      "cache_read_input_tokens": 67755,
+      "calls": 32,
+      "input_tokens": 196036,
+      "output_tokens": 56794
     },
-    "new_insights": 7,
-    "new_videos_found": 201,
-    "pending_left": 200,
-    "proposed_topics": [],
-    "reinforced": 0,
-    "since": "2026-10-23T19:15:50.220471+00:00",
-    "skipped_short": 120,
+    "new_insights": 136,
+    "new_videos_found": 1,
+    "pending_left": 179,
+    "proposed_topics": [
+      "local-ai",
+      "on-device-ai",
+      "ai-safety-governance",
+      "ai-security",
+      "semantic-layer-grounding",
+      "agent-memory"
+    ],
+    "reinforced": 13,
+    "since": "2026-11-21T19:15:50.220471+00:00",
+    "skipped_short": 0,
     "stale": 0,
     "superseded": 0,
-    "transcript_missing": 200,
+    "transcript_missing": 179,
+    "transcripts_blocked": true,
     "week": "2026-W47"
   },
-  "last_success_run": "2026-11-22T19:15:50.220471+00:00",
+  "last_success_run": "2026-11-22T22:22:01.194482+00:00",
   "pending_reconcile": {}
 }

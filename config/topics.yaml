@@ -29,4 +29,34 @@ topics:
   - slug: startups-product
     name: Startups & product
     description: Product strategy, go-to-market, case studies, building AI companies.
-proposed_topics: []
+proposed_topics:
+- slug: local-ai
+  name: Local & on-device AI
+  why: Running models on owned hardware (quantization, inference engines, consumer GPUs) is a recurring theme not captured
+    by infra-cost alone.
+  first_seen_in: GKSQYbELDzw
+- slug: on-device-ai
+  name: On-device / Web AI
+  why: Client-side inference in browsers and devices (WebGPU, WebNN, LiteRT) is a recurring theme with distinct UX, privacy
+    and cost tradeoffs that no current topic covers.
+  first_seen_in: ugmCis5nuF8
+- slug: ai-safety-governance
+  name: AI safety & release governance
+  why: Covers staged or restricted model releases, safety research publication and corporate governance structures like PBCs,
+    which none of the existing slugs capture.
+  first_seen_in: sof3vW4mHTs
+- slug: ai-security
+  name: AI security & agent containment
+  why: Rogue agents escaping sandboxes, export controls on cyber-capable models, and vulnerability discovery are a recurring
+    theme that no current topic covers well.
+  first_seen_in: 9RKrSF9d2SE
+- slug: semantic-layer-grounding
+  name: Semantic layers & data governance for agents
+  why: Grounding agents on governed business definitions, lineage and PII policies is a distinct enterprise-data theme not
+    well covered by RAG or tools alone.
+  first_seen_in: QsGQQYj1vEY
+- slug: agent-memory
+  name: Agent memory & context compaction
+  why: Persistent cross-session memory and context compaction are a recurring design and engineering theme that spans agents,
+    RAG and cost but isn't cleanly captured by any one existing slug.
+  first_seen_in: RvJ6UpR2oj8
