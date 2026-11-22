@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Video Knowledge Hub</title>
+  <meta name="description" content="Weekly insights from AI YouTube channels, grouped by topic, with outdated knowledge pruned.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="masthead">
+    <div class="wrap">
+      <div class="brand">
+        <h1 id="site-title">AI Video Knowledge Hub</h1>
+        <p class="meta" id="run-meta">Loading…</p>
+      </div>
+      <label class="search">
+        <span class="sr-only">Search insights and videos</span>
+        <input id="q" type="search" placeholder="Search insights, videos, tools…" autocomplete="off">
+      </label>
+    </div>
+    <nav class="wrap tabs" role="tablist" aria-label="Views">
+      <button role="tab" data-view="new" aria-selected="true">What's new</button>
+      <button role="tab" data-view="topics">By topic</button>
+      <button role="tab" data-view="weeks">By week</button>
+      <button role="tab" data-view="relevance">By relevance</button>
+      <button role="tab" data-view="outdated">What's outdated</button>
+      <button role="tab" data-view="digests">Digests</button>
+    </nav>
+  </header>
+  <main class="wrap" id="main" tabindex="-1"></main>
+  <footer class="wrap foot">
+    Summaries and short notes only. Watch the full videos on YouTube. Generated <span id="generated"></span>.
+  </footer>
+  <script src="app.js"></script>
+</body>
+</html>

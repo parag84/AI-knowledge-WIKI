@@ -1,0 +1,9 @@
+[
+  {"start": 0.0, "text": "Welcome everyone, today we're talking about approval flows for agents."},
+  {"start": 12.5, "text": "When an agent calls a tool through MCP, the user should see what it wants to do."},
+  {"start": 41.0, "text": "We moved from a modal confirm dialog to an inline diff card and approvals went up."},
+  {"start": 95.0, "text": "With the 2026-06 MCP spec, tool annotations tell you if a call is read-only."},
+  {"start": 160.0, "text": "Use that to skip approval for read-only tools and batch the rest."},
+  {"start": 420.0, "text": "Here's the component architecture: a web component per tool-call state."},
+  {"start": 900.0, "text": "Questions? Thanks for coming."}
+]

@@ -1,0 +1,17 @@
+# YouTube channels to follow. Add a channel by appending an entry; no code changes needed.
+# Each entry needs a `name` plus either `handle` (the @name in the channel URL) or `channel_id` (UC...).
+# If a handle doesn't resolve, open the channel page, copy the channel ID from "Share channel" → "Copy channel ID",
+# and set `channel_id`. The run logs every resolved ID so you can pin them here.
+channels:
+  - name: AI Engineer
+    handle: "@aiDotEngineer"
+  - name: Agentic AI Foundation
+    handle: "@AgenticAIFoundation"
+  - name: Claude
+    handle: "@claude"
+  - name: Anthropic
+    handle: "@anthropic-ai"
+  - name: Google Cloud Tech
+    handle: "@googlecloudtech"
+  - name: OpenAI
+    handle: "@OpenAI"

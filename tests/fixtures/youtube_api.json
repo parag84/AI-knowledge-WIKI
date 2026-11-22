@@ -1,0 +1,41 @@
+{
+  "channels": {
+    "items": [{
+      "id": "UCsample0000000000000000",
+      "snippet": {"title": "AI Engineer"},
+      "contentDetails": {"relatedPlaylists": {"uploads": "UUsample0000000000000000"}}
+    }]
+  },
+  "playlistItems": {
+    "items": [
+      {"contentDetails": {"videoId": "vid00000001", "videoPublishedAt": "2026-11-18T16:00:00Z"}},
+      {"contentDetails": {"videoId": "short000001", "videoPublishedAt": "2026-11-17T16:00:00Z"}},
+      {"contentDetails": {"videoId": "old00000001", "videoPublishedAt": "2026-09-01T16:00:00Z"}}
+    ]
+  },
+  "videos": {
+    "items": [
+      {
+        "id": "vid00000001",
+        "snippet": {
+          "title": "Designing Agent UIs with MCP: Approval Flows That Users Trust",
+          "channelTitle": "AI Engineer", "channelId": "UCsample0000000000000000",
+          "publishedAt": "2026-11-18T16:00:00Z",
+          "description": "A talk on tool-call approval UI patterns for agentic products.",
+          "liveBroadcastContent": "none",
+          "thumbnails": {"high": {"url": "https://i.ytimg.com/vi/vid00000001/hqdefault.jpg"}}
+        },
+        "contentDetails": {"duration": "PT24M30S"}
+      },
+      {
+        "id": "short000001",
+        "snippet": {
+          "title": "MCP in 60 seconds", "channelTitle": "AI Engineer", "channelId": "UCsample0000000000000000",
+          "publishedAt": "2026-11-17T16:00:00Z", "description": "", "liveBroadcastContent": "none",
+          "thumbnails": {}
+        },
+        "contentDetails": {"duration": "PT58S"}
+      }
+    ]
+  }
+}

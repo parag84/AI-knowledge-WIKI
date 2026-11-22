@@ -1,0 +1,16 @@
+# Who the hub is for. Used for relevance scoring (1-5) and "how this applies to my work" notes.
+name: Parag
+role: Senior UX/UI designer working on agentic experience (AX), design systems and AI developer portals
+focus_areas:
+  - Agentic UX / agentic experience (AX): designing how people delegate to, supervise and trust agents
+  - Design systems, design tokens and component governance
+  - Lit / Web Components and framework-agnostic component libraries
+  - Enterprise developer portals and API documentation experiences
+  - AI component libraries (chat, streaming output, tool-call and approval UI, citations)
+  - Intent-driven design: interfaces that start from user intent instead of navigation
+relevance_rubric:
+  5: Directly changes how Parag would design or build AX, design systems or developer portals this month
+  4: Strongly related; worth a concrete experiment or a note to the team
+  3: Useful background on tools or patterns he works next to
+  2: General AI news with indirect relevance
+  1: Not relevant to his work

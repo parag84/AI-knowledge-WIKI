@@ -1,0 +1,32 @@
+# Controlled topic taxonomy. Claude may only tag insights with slugs listed under `topics`.
+# New topics Claude suggests land in `proposed_topics`; move an entry up into `topics` to approve it,
+# or delete it to reject it.
+topics:
+  - slug: agents
+    name: Agents
+    description: Agent architectures, planning, memory, multi-agent orchestration, agent frameworks.
+  - slug: evals
+    name: Evals
+    description: Evaluating models and agents, benchmarks, LLM-as-judge, regression testing.
+  - slug: rag
+    name: RAG & retrieval
+    description: Retrieval-augmented generation, embeddings, search, context engineering over documents.
+  - slug: mcp-tools
+    name: MCP & tools
+    description: Model Context Protocol, tool use, function calling, connectors, agent-to-tool interfaces.
+  - slug: coding-agents
+    name: Coding agents
+    description: AI coding assistants and agents (Claude Code, Codex, Gemini CLI, etc.), dev workflows.
+  - slug: ux-for-ai
+    name: UX for AI
+    description: Interaction design for AI and agentic products, trust, transparency, generative UI, AX.
+  - slug: infra-cost
+    name: Infra & cost
+    description: Serving, latency, caching, pricing, deployment, observability, cost control.
+  - slug: model-releases
+    name: Model releases
+    description: New model launches, capabilities, versions, deprecations, API changes.
+  - slug: startups-product
+    name: Startups & product
+    description: Product strategy, go-to-market, case studies, building AI companies.
+proposed_topics: []
