@@ -60,7 +60,14 @@ def commit() -> None:
         return
     message = json.loads(SUMMARY.read_text(encoding="utf-8"))["commit_message"]
     sh("git", "commit", "-m", message)
-    sh("git", "push", "origin", "HEAD:main")
+    # main may have moved while the run was going (e.g. a merged PR): replay the results on top of it.
+    for attempt in range(3):
+        if sh("git", "pull", "--rebase", "origin", "main", check=False) != 0:
+            sh("git", "rebase", "--abort", check=False)
+            sys.exit("Results conflict with newer commits on main; re-run the workflow to regenerate them.")
+        if sh("git", "push", "origin", "HEAD:main", check=False) == 0:
+            return
+    sys.exit("Push to main failed three times.")
 
 
 if __name__ == "__main__":
