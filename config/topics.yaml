@@ -56,3 +56,33 @@ proposed_topics:
   why: Grounding agents on governed business definitions, lineage and PII policies is a distinct enterprise-data theme not
     well covered by RAG or tools alone.
   first_seen_in: QsGQQYj1vEY
+- slug: i18n-accessibility
+  name: Internationalization & accessibility for AI
+  why: Multiple talks (MCP i18n SEP, multilingual voice-first users, GBV survivors' coded language) treat language and accessibility
+    as first-class agent design concerns not covered by ux-for-ai alone.
+  first_seen_in: BOlf10RUB4s
+- slug: agent-experience-dx
+  name: Agent experience for tools (AX for CLIs/APIs)
+  why: Several talks treat agents as the primary users of CLIs, MCP servers and docs (pipe tax, agent mode, skill.md as interface),
+    a design discipline distinct from UX for human users of AI.
+  first_seen_in: y9JtCCZP2MQ
+- slug: decision-models
+  name: Decision / system-one models
+  why: Several talks centre on a new class of single-forward-pass classifier models (Jev, Clef, Cleric, Gemini Decisions API)
+    that are distinct from generative LLMs and drive routing, judging and intent-detection patterns.
+  first_seen_in: ZZ19zhYnDKY
+- slug: spec-driven-development
+  name: Spec-driven development
+  why: Writing and verifying specs/requirements as the primary artifact handed to coding agents is a recurring theme not cleanly
+    covered by coding-agents or evals.
+  first_seen_in: 0EnLxIbAvYk
+- slug: realtime-multimodal
+  name: Real-time multimodal agents
+  why: Live voice/vision streaming agents with interruption and frame handling are a distinct architectural and UX theme not
+    fully covered by agents or ux-for-ai.
+  first_seen_in: gg-gXO0tIUY
+- slug: voice-agents
+  name: Voice agents
+  why: Full-duplex voice interfaces over agent backends are a distinct design and engineering area that the current taxonomy
+    only partly covers.
+  first_seen_in: jDxKzlGLCas
